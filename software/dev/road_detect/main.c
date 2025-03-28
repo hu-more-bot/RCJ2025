@@ -41,15 +41,13 @@ int main() {
   }
 
   // Process Frame
-  struct Line line[2];
+  struct Line line[2] = {};
 
   double start = now();
   
   for (int i = 0; i < SAMPLES; i++) {
     struct Line tmp;
     for (int y = 0; y < h; y++) {
-      memset(line, 0, sizeof(struct Line) * 2);
-            
       // x: pixel id in scanline
       unsigned char *scanline = &frame[y * w];
 
@@ -61,16 +59,17 @@ int main() {
             tmp.width++, x++;
 
           if (MIN_WIDTH <= tmp.width && tmp.width <= MAX_WIDTH) {
-            const uint8_t i = line[0].width < line[1].width;
+            const uint8_t i = line[0].width > line[1].width;
             if (line[i].width < tmp.width) memcpy(&line[i], &tmp, sizeof(struct Line));
           }
         }
       }
 
       if (line[0].width && line[1].width) {
-        printf("%u %u\n", line[0].start, line[1].start);
         memset(scanline + line[0].start, 255, line[0].width);
         memset(scanline + line[1].start, 255, line[1].width);
+
+        memset(line, 0, sizeof(struct Line) * 2);
       }
     }
   }
@@ -80,6 +79,7 @@ int main() {
   printf("total: %f\n", (double)(end - start) / (double)SAMPLES);
 
   stbi_write_bmp("out.bmp", w, h, 1, frame);
+  free(frame);
 
   return 0;
 }
