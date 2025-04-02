@@ -6,12 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCJ2025</title>
     <style>
-        body{
-            min-height: 100vh;
-            background-image: linear-gradient(140deg, #3dbafc, #25654d);
-        }
-
-        #lapCount {
+        .lapCount {
             background-color: black;
             color: white;
             padding: 5px 10px;
@@ -21,7 +16,7 @@
 </head>
 <body>
     <div>
-        Körök száma: <span id="lapCount">{{laps}}</span>
+        Körök száma: <span id="lapCount" class="lapCount">{{laps}}</span>
         <button onclick="incrementLaps()">Add Lap</button>
     </div>
 
