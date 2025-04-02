@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="{{ url_for('static', filename='js/socket.io.js') }}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCJ2025</title>
+    <style>
+        .lapCount {
+            background-color: black;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        Körök száma: <span id="lapCount" class="lapCount">{{laps}}</span>
+        <button onclick="incrementLaps()">Add Lap</button>
+    </div>
+
+    <script>
+        var socket = io();
+        
+        // Update lap count when server sends new data
+        socket.on('update_laps', function(data) {
+            document.getElementById('lapCount').textContent = data.laps;
+        });
+        
+        // Function to increment laps
+        function incrementLaps() {
+            fetch('/getLaps')
+                .then(response => response.text())
+                .then(laps => {
+                    // The socket.io event will handle the update
+                });
+        }
+    </script>
+</body>
+</html>

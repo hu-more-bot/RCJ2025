@@ -48,9 +48,11 @@ double now() {
  
 // the function that gives the value of the steering point at a y coordinate
 // given as mid*(a*y^2+b*y+c)
-#define a 1 // a or b should be 0 and the other should have a value 
-#define b 0 // a=0 -> linear increase in offset b=0 -> exponensial increase in offset
-#define c 1
+// a or b should be 0 and the other should have a value 
+// a=0 -> linear increase in offset b=0 -> exponensial increase in offset
+#define A 1 
+#define B 1
+#define C 1
 
 /**
  * gets the value of the steering offset
@@ -66,7 +68,7 @@ float EvaluateSteeringOffset(float midPoint, int currentHeight, int pictureWidth
   }
   float y = currentHeight - topCutoff*pictureHeight;
 
-  return (a*y*y+b*y+c) * midPoint;
+  return (A*y*y+B*y+C) * (midPoint - pictureWidth/2);
 }
 
 /* ================== IMAGE PROCESSING FUNCTIONS ================== */
@@ -147,13 +149,14 @@ void drawRGBLine(unsigned char* rgb, int width, int y, int start, int length,
  * Draws the left border marker on an RGB image
  * @param rgb RGB image data
  * @param width Image width
+ * @param height the height of the picture
  * @param y Y-coordinate of the line
- * @param currentHeight Current marker height value
+ *
  */
-void drawLeftBorderMarker(unsigned char* rgb, int width, int y, int currentHeight, int ) {
+void drawLeftBorderMarker(unsigned char* rgb, int width, int height,int y) {
     for (int x = 0; x < 3; x++) {
         int idx = (y * width + x) * 3;
-        int val = 255 * (EvaluateSteeringOffset(1, ));
+        int val = 255 * (EvaluateSteeringOffset(1, y, width, height) / EvaluateSteeringOffset(1, height, width, height));
         rgb[idx] = rgb[idx+1] = rgb[idx+2] = val;
     }
 }
@@ -201,7 +204,7 @@ void processImage(int testCase) {
                     drawRGBLine(rgb, width, y, mid, MIDLINE_WIDTH, 255, 0, 0);
                     
                     // Update steering value based on line positions
-                    steering_value += EvaluateVector();
+                    steering_value += EvaluateSteeringOffset(mid, y, width, height);
                     
                     
 
@@ -214,7 +217,7 @@ void processImage(int testCase) {
                 }
                 
                 // Draw left border marker
-                drawLeftBorderMarker(rgb, width, y, y);
+                drawLeftBorderMarker(rgb, width, height, y);
             }
         }
     }
