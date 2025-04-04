@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-void bldc_init(uint8_t pin);
+void motor_init(uint8_t pin);
 
-void bldc_set_speed(uint8_t pin, uint16_t us);
+void motor_set(uint8_t pin, uint16_t us);
 

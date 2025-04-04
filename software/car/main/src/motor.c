@@ -1,5 +1,3 @@
-#pragma once
-
 #include "motor.h"
 
 #include "pico/stdlib.h"
@@ -7,10 +5,10 @@
 #include "hardware/pwm.h"
 #include "hardware/clocks.h"
 
-const float clockDiv = 64;
-const float wrap = 39062;
+float clockDiv = 64;
+float wrap = 39062;
 
-void bldc_init(uint8_t pin) {
+void motor_init(uint8_t pin) {
     gpio_set_function(pin, GPIO_FUNC_PWM);
     uint slice_num = pwm_gpio_to_slice_num(pin);
 
@@ -30,9 +28,8 @@ void bldc_init(uint8_t pin) {
     pwm_init(slice_num, &config, true);
 }
 
-void bldc_set_speed(uint8_t pin, uint16_t us) {
-    pwm_set_gpio_level(pin, us * 0.05 * wrap);
-}
+void motor_set(uint8_t pin, uint16_t ms) {
+    pwm_set_gpio_level(pin, (ms / 20000.f) * wrap);}
 
 // // Set Servo Degrees (in millis)
 // void servo_setMillis(int servoPin, float millis)

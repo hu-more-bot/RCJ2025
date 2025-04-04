@@ -1,135 +1,116 @@
-// Robot
-#include "base.h"
-#include "pose.h"
 
-// PicoSDK
-// #include <boards/pico.h>
+// // #include <boards/pico.h>
 #include <hardware/gpio.h>
-// #include <pico/multicore.h>
-// #include <pico/stdio.h>
+// #include <hardware/spi.h>
+// #include <hardware/i2c.h>
 #include <pico/time.h>
 
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
+#include <motor.h>
+// #include <pico/stdio.h>
 
-// Pin Definitions
-#define RELAY 28
-#define SWITCH 14
-#define LED PICO_DEFAULT_LED_PIN
-
-#define SERVO 0
-#define STEPPER 8
-
-const pose_t pose[] = {
-    // rest
-    {0.3, 0.0, 0.25, 0.7,  // right hand
-     0.3, 0.3, 0.25, 0.7}, // left hand
-                           // armsup
-    {0.5, 0.0, 0.25, 0.7,  // right hand
-     0.3, 0.3, 0.25, 0.7}  // left hand
-};
-const size_t poses = sizeof(pose) / sizeof(*pose);
-
-void blink(int pin);
-// void core1();
+#define SERVO1 22
+#define SERVO2 23
+#define SERVO3 24
+#define SERVO4 25
 
 int main() {
-  // stdio_init_all();
-  // multicore_launch_core1(core1);
+  // Servo
+  motor_init(SERVO2);
+  motor_set(SERVO2, 1500);
+  
+  // BLDC
+  sleep_ms(2000);
+  motor_init(SERVO1);
+  motor_set(SERVO1, 2000);
+  sleep_ms(2000);
+  motor_set(SERVO1, 1000);
+  sleep_ms(2000);
+  motor_set(SERVO1, 500);
+  sleep_ms(2000);
 
-  // Arm System
-  gpio_init(RELAY);
-  gpio_set_dir(RELAY, GPIO_OUT);
-  gpio_put(RELAY, 0);
+  // motor_set(SERVO2, 1000);
+  // motor_set(SERVO1, 1200);
+  // sleep_ms(500);
 
-  gpio_init(SWITCH);
-  gpio_set_dir(SWITCH, GPIO_IN);
-  gpio_pull_up(SWITCH);
+  // for (int i = 0; i < 16 * 2; i++) {
+  //   motor_set(SERVO1, 1100);
+  //   sleep_ms(1500);
+  //   // motor_set(SERVO1, 1000);
+  //   // sleep_ms(300);
+  // }
 
-  gpio_init(LED);
-  gpio_set_dir(LED, GPIO_OUT);
-  gpio_put(LED, false);
+  motor_set(SERVO1, 1200);
+  sleep_ms(250);
+  motor_set(SERVO1, 1300);
+  motor_set(SERVO2, 1000);
+  sleep_ms(15000);
 
-  while (gpio_get(SWITCH))
-    blink(LED);
+  motor_set(SERVO1, 1000);
+  
+  // motor_set(SERVO2, 1800);
+  // sleep_ms(500);
 
-  while (!gpio_get(SWITCH))
-    gpio_put(LED, true);
-  gpio_put(LED, false);
+  // motor_set(SERVO1, 1000);
+  // motor_set(SERVO2, 1500);
 
-  gpio_put(RELAY, true);
-
-  // Init Pose & Base
-  base_init(STEPPER);
-
-  base_speed(1000);
-  base_step(1300 * 5.5, 1300 * 5.5);
-  base_step(1300, -1300);
-  sleep_ms(60 * 1000);
-  base_step(1300, -1300);
-  base_step(1300 * 5.5, 1300 * 5.5);
-  while (1)
-    ;
-  // base_step(1600 * 2, 1600 * 2);
-  // base_step(1600 * 2, -1600 * 2);
-
-  // int state = 0;
-
-  pose_init(SERVO);
-  pose_set(pose[0]);
-
-  uint32_t state;
-  int t = 0;
-  while (true) {
-    int now = (int)(to_ms_since_boot(get_absolute_time()) / 1000.0f);
-    if (now % 5 == 0 && t != now) {
-      t = now;
-      state = !state;
-      pose_set(pose[state]);
+  while(1) {
+      // motor_set(SERVO2, 1200);
+      // sleep_ms(1000);
+      // motor_set(SERVO2, 1500);
+      // sleep_ms(1000);
+      // motor_set(SERVO2, 1800);
+      // sleep_ms(1000);
+      // motor_set(SERVO2, 1500);
+      // sleep_ms(1000);
     }
-
-    // //   int swon = gpio_get(SWITCH);
-    // //   base_enable(swon, swon);
-
-    // //   // base_step(1, 1);
-
-    pose_update();
-  }
-
-  // Disarm System
-  gpio_put(RELAY, 0);
 }
 
-void blink(int pin) {
-  gpio_put(pin, true);
-  sleep_ms(100);
-  gpio_put(pin, false);
-  sleep_ms(100);
-}
+// int main() {
+//   // Camera
+//   gpio_init(0); // SDA
+//   gpio_set_function(0, GPIO_FUNC_I2C);
+//   gpio_pull_up(0);
 
-// void core1() {
+//   gpio_init(1); // SCL
+//   gpio_set_function(1, GPIO_FUNC_I2C);
+//   gpio_pull_up(1);
+
+//   i2c_init(i2c0, 100000); // 100kHz
+
+//   gpio_init(5); // io
+//   gpio_init(3);
+//   gpio_init(2);
+//   gpio_init(4);
+//   gpio_init(6);
+//   gpio_init(8);
+//   gpio_init(9);
+//   gpio_init(11);
+
+//   gpio_init(7); // pclk
+//   gpio_init(10); // mclk
+//   gpio_init(12); // hd
+//   gpio_init(13); // pwdn
+//   gpio_init(14); // vd
+//   gpio_init(15); // rst
+
+//   // Accelerometer
+//   spi_init(spi0, 1000 * 1000);
+//   gpio_set_function(16, GPIO_FUNC_SPI);
+//   gpio_init(17);
+//   gpio_set_function(18, GPIO_FUNC_SPI);
+//   gpio_set_function(19, GPIO_FUNC_SPI);
+
+//   gpio_init(20);
+//   gpio_init(21);
+
+//   // BLDC
+//   bldc_init(22);
+
+//   bldc_set_speed(22, 2000);
+//   sleep_ms(1000);
+//   bldc_set_speed(22, 1000);
+//   sleep_ms(2000);
+
 //   while (1) {
-//     char data[64];
-//     if (scanf("%63s", data) == 1) {
-//       char cmd[16];
-//       int n;
-
-//       if (sscanf(data, "%i%s", &n, cmd) == 2) {
-//         if (!strcmp(cmd, "base")) {
-//           multicore_fifo_drain();
-//           multicore_fifo_push_blocking(n);
-//           printf("base %i\n", n);
-//         } else if (!strcmp(cmd, "pose")) {
-//           if (n < poses) {
-//             pose_set(pose[n]); // set pose
-//             printf("Pose %i set\n", n);
-//           } else {
-//             printf("Pose %i does not exist\n", n);
-//           }
-//         }
-//         // TODO animations
-//       }
-//     }
+//     bldc_set_speed(22, 1100);
 //   }
-// }
