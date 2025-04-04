@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="{{ url_for('static', filename='js/socket.io.js') }}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCJ2025</title>
+    <style>
+        body {
+            min-height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            background-image: linear-gradient(140deg, #3dbafc, #25654d);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: rgb(71, 71, 71);
+        }
+
+        #lapCount {
+            font-size: 4vw;
+            padding-left: 15px;
+        }
+
+        #lapContainer {
+            font-size: 3vw;
+            display: flex;
+            align-items: center;
+        }
+
+        #timer {
+            color: rgb(71, 71, 71);
+            font-size: 6vw;
+            font-family: monospace;
+        }
+
+        #subtimes {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 25vh;
+        }
+
+        #subtimes>div {
+            display: flex;
+            
+        }
+
+        #subtimes>div>div {
+            flex: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="timer">
+        <span id="minutes">
+            00
+        </span>:
+        <span id="seconds">
+            00
+        </span>:
+        <span id="milis">
+            000
+        </span>
+    </div>
+    <div id="lapContainer">
+        Körök: <span id="lapCount">{{laps}}</span>
+    </div>
+
+
+    <div id="subtimes">
+    </div>
+
+    <script>
+        var socket = io();
+
+
+        let lap_times = []
+        let race_start = 0
+        let race_end = 0
+
+        let subtimesContainer = null
+
+        const timestampToString = (milis) => {
+            // Calculate minutes (remaining after hours)
+            const totalSeconds = Math.floor(milis / 1000);
+            const minutes = Math.floor(totalSeconds / 60) % 60;
+
+            // Calculate seconds (remaining after minutes)
+            const seconds = totalSeconds % 60;
+
+            // Calculate milliseconds (remaining after seconds)
+            const milliseconds = milis % 1000;
+
+            return `${minutes}:${seconds}:${milliseconds}`
+        }
+
+        // Update lap count when server sends new data
+        socket.on('update_data', function (data) {
+            document.getElementById('lapCount').textContent = data.laps;
+            lap_times = data.lap_times
+            race_end = data.race_end
+            race_start = data.race_start
+            console.log(data)
+
+
+            let subtimesHTML = ""
+            if (!subtimesContainer) {
+                subtimesContainer = document.getElementById("subtimes")
+            }
+
+            lap_times.forEach((value, index) => {
+
+                let lastTime = 0
+                if(index == 0){
+                    lastTime = race_start
+                }
+                else{
+                    lastTime = lap_times[index-1]
+                }
+
+                subtimesHTML += `<div><div>${timestampToString(value - race_start)}</div><div>${timestampToString(value - lastTime)}</div></div>`
+            })
+            subtimesContainer.innerHTML = subtimesHTML
+
+        });
+
+        let milis = 0;
+
+        let milisContainer = null
+        let secondsContainer = null
+        let minutesContainer = null
+
+        setInterval(() => {
+            if (!milisContainer || !secondsContainer || !minutesContainer) {
+                milisContainer = document.getElementById("milis")
+                secondsContainer = document.getElementById("seconds")
+                minutesContainer = document.getElementById("minutes")
+            }
+
+            if (race_start == 0) {
+                milisContainer.textContent = "000"
+                secondsContainer.textContent = "00"
+                minutesContainer.textContent = "00"
+
+                milis = 0
+            }
+
+            else if (race_start > 0 && race_end > 0) {
+                milis = race_end - race_start
+            }
+            else {
+                milis = Date.now() - race_start
+            }
+
+
+
+            // Calculate minutes (remaining after hours)
+            const totalSeconds = Math.floor(milis / 1000);
+            const minutes = Math.floor(totalSeconds / 60) % 60;
+
+            // Calculate seconds (remaining after minutes)
+            const seconds = totalSeconds % 60;
+
+            // Calculate milliseconds (remaining after seconds)
+            const milliseconds = milis % 1000;
+
+            // Update the display
+            milisContainer.textContent = milliseconds.toString().padStart(3, "0");
+            secondsContainer.textContent = seconds.toString().padStart(2, "0");
+            minutesContainer.textContent = minutes.toString().padStart(2, "0");
+        }, 17)
+
+    </script>
+</body>
+
+</html>
