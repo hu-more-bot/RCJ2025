@@ -11,13 +11,13 @@ uint8_t framebuffer[320 * 240 * 2];
 
 #include "motor.h"
 
-#define IMCAPTURE false
+#define IMCAPTURE 0
 
 // steering: 1300 1600 1900
 
-#define TRESHOLD_COLOR 35
+#define TRESHOLD_COLOR 160
 #define MIN_WIDTH 1 // (px)
-#define MAX_WIDTH 16 // (px)
+#define MAX_WIDTH 24 // (px)
 
 struct Line {
   int start, width;
@@ -41,6 +41,41 @@ uint8_t rgb565_mono(uint8_t high_byte, uint8_t low_byte) {
     return (uint8_t)gray;
 }
 
+float road_detect(unsigned char *buf) {
+    struct Line line[2];
+    float steering_value = 0;
+  
+    for (int y = 0+115; y < 240-15; y++) {
+      // x: pixel id in scanline
+      unsigned char *scanline = &buf[(y * 320) * 2];
+      int mid = 0;
+
+      // find lines
+      struct Line tmp;
+      memset(line, 0, sizeof(struct Line) * 2);
+      
+      for (int x = 0 + 16; x < 320 - 16; x++) {
+        tmp.start = x, tmp.width = 0;
+
+        while (x < 320 - 16 && rgb565_mono(scanline[x * 2], scanline[x * 2 + 1]) < TRESHOLD_COLOR)
+          tmp.width++, x++;
+
+        if (MIN_WIDTH <= tmp.width && tmp.width <= MAX_WIDTH) {
+          const uint8_t i = line[0].width > line[1].width;
+            if (line[i].width < tmp.width) memcpy(&line[i], &tmp, sizeof(struct Line));
+        }
+      } // x check
+
+      if (line[0].width && line[1].width) {
+            mid = (line[0].start + line[0].width / 2 + line[1].start + line[1].width / 2) / 2;
+      
+        steering_value += (mid - 320/2);
+      } // x check
+    }
+
+    return steering_value;
+}
+
 int clamp(int n, int min_value, int max_value) {
   if (n < min_value) {
     return min_value;
@@ -56,52 +91,7 @@ void core1_entry() {
 	motor_set(23, 1600);
 	
 	while (1) {
-		// Process Frame
-		struct Line line[2] = {};
-		float steering_value = 0;
-
-			for (int y = 0 + 16; y < 240 - 16; y++) {
-				// x: pixel id in scanline
-				unsigned char *scanline = &framebuffer[(y * 320) * 2];
-				int mid = 0;
-
-				// find lines
-				struct Line tmp;
-				for (int x = 0 + 16; x < 320 - 16; x++) {
-					uint8_t mono = rgb565_mono(scanline[x * 2], scanline[x * 2 + 1]);
-					if (mono < TRESHOLD_COLOR) {
-						tmp.start = x, tmp.width = 0;
-
-						while (x < 320 && mono < TRESHOLD_COLOR) {
-							tmp.width++, x++;
-							mono = rgb565_mono(scanline[x * 2], scanline[x * 2 + 1]);
-						}
-
-						if (MIN_WIDTH <= tmp.width && tmp.width <= MAX_WIDTH) {
-							const uint8_t i = line[0].width > line[1].width;
-							if (line[i].width < tmp.width) memcpy(&line[i], &tmp, sizeof(struct Line));
-							mid = (line[0].start + line[1].start) / 2;
-						}
-					}
-				}
-
-				if (line[0].width && line[1].width) {
-					steering_value += (mid - 320 / 2.0f) * y;
-
-					memset(scanline + mid * 2, 0, 20);
-					steering_value += (mid - 320 / 2.0f) * y;
-
-					memset(scanline + line[0].start * 2, 0, line[0].width * 2);
-					memset(scanline + line[1].start * 2, 0, line[1].width * 2);
-					
-					memset(line, 0, sizeof(struct Line) * 2);
-				}
-			}
-
-		if (steering_value) {
-			printf("%.2u %.2u %f\n", line[0].start, line[1].start, steering_value);
-			motor_set(23, 1600 + clamp((int)(300 * (steering_value / 250000)), -300, 300));
-		}
+		motor_set(23, 1600 + clamp((int)(-300 * (road_detect(framebuffer) / 250)), -300, 300));
 	}
 }
 
@@ -109,26 +99,31 @@ int main() {
 	set_sys_clock_khz(125000, true);
 	stdio_init_all();
 	
-	// Init Servo
-	// motor_init(23);
-	// motor_set(23, 1600 - 300);
+	motor_init(23);
+	motor_set(23, 1300);
 
-	// sleep_ms(2000);
+	// Init BLDC
+  sleep_ms(2000);
+  motor_init(22);
+  motor_set(22, 2000);
+  sleep_ms(2000);
+  motor_set(22, 1000);
+  sleep_ms(2000);
+  motor_set(22, 500);
+  sleep_ms(2000);
 
- //  // Init BLDC
- //  sleep_ms(2000);
- //  motor_init(22);
- //  motor_set(22, 2000);
- //  sleep_ms(2000);
- //  motor_set(22, 1000);
- //  sleep_ms(2000);
- //  motor_set(22, 500);
- //  sleep_ms(2000);
+  motor_set(22, 1200);
+	sleep_ms(500);
 
- //  motor_set(22, 1200);
-	// sleep_ms(500);
+	motor_set(22, 1080);
+	sleep_ms(1000);
 
- //  motor_set(22, 1080);
+	motor_set(22, 1000);
+	while (1);
+
+	
+	
+  
 
 	// sleep_ms(4000);
 
@@ -173,13 +168,50 @@ int main() {
 	ov7670_reg_write(&config, 0x73, 0xf1);
 	ov7670_reg_write(&config, 0xa2, 0x02);
 
+	ov7670_reg_write(&config, 0x13, 0b10001110);
+	ov7670_reg_write(&config, 0x10, 0x08);
+
+	ov7670_reg_write(&config, 0x41, 0b110000);
+	ov7670_reg_write(&config, 0x76, 0b111111);
+
 	sleep_ms(100);
+
+	// Init BLDC
+  sleep_ms(2000);
+  motor_init(22);
+  motor_set(22, 2000);
+  sleep_ms(2000);
+  motor_set(22, 1000);
+  sleep_ms(2000);
+  motor_set(22, 500);
+  sleep_ms(2000);
+
+  motor_set(22, 1200);
+	sleep_ms(200);
 
 #if IMCAPTURE
 	sleep_ms(2000);
 	ov7670_capture_frame(&config);
 
-		// Process Frame
+	for (int i = 0; i < 320 * 240 * 2; i++) {
+		printf("%u ", framebuffer[i]);
+	}
+
+	while(1);
+#else
+	multicore_launch_core1(core1_entry);
+
+	while (true) {
+		motor_set(22, 1050);
+		ov7670_capture_frame(&config);
+	}
+#endif
+
+	return 0;
+}
+
+/*
+	// Process Frame
 		struct Line line[2] = {};
 		float steering_value = 0;
 
@@ -211,7 +243,7 @@ int main() {
 				if (line[0].width && line[1].width) {
 					steering_value += (mid - 320 / 2.0f) * y;
 
-					memset(scanline + mid * 2, 0, 20);
+					memset(scanline + mid * 2, 255, 20);
 					steering_value += (mid - 320 / 2.0f) * y;
 
 					memset(scanline + line[0].start * 2, 0, line[0].width * 2);
@@ -220,17 +252,4 @@ int main() {
 					memset(line, 0, sizeof(struct Line) * 2);
 				}
 			}
-
-			for (int i = 0; i < 320 * 240 * 2; i++) {
-				printf("%u ", framebuffer[i]);
-			}
-
-	while(1);
-#else
-	multicore_launch_core1(core1_entry);
-
-	while (true) ov7670_capture_frame(&config);
-#endif
-
-	return 0;
-}
+			*/
