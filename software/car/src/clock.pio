@@ -1,0 +1,25 @@
+.program clock
+.side_set 1
+
+.wrap_target
+loop:
+    nop        side 1
+    nop        side 1
+    nop        side 0
+    nop        side 0
+    jmp loop
+.wrap
+
+% c-sdk {
+void clock_program_init(PIO pio, uint sm, uint offset, uint pin, float freq) {
+    pio_sm_config c = xclk_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_out_shift(&c, false, false, 32);
+    sm_config_set_set_pins(&c, pin, 1);
+    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (freq * 4.0f)); // 4 cycles per full wave
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

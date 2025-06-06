@@ -15,5 +15,14 @@ add_compile_options(-Wall
     -Wno-maybe-uninitialized
 )
 
-# Sources
-add_subdirectory(main)
+add_executable(main main.c src/ov7670.c src/motor.c)
+
+# pico_generate_pio_header(main ${CMAKE_CURRENT_LIST_DIR}/src/clock.pio)
+
+target_link_libraries(main pico_stdlib hardware_i2c hardware_pio hardware_dma hardware_pwm pico_multicore)
+target_include_directories(main PUBLIC "include")
+
+pico_enable_stdio_usb(main 1)
+pico_enable_stdio_uart(main 0)
+
+pico_add_extra_outputs(main)
